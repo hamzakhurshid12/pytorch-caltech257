@@ -82,9 +82,9 @@ train_set = datasets.ImageFolder("objectsSplitted/train", transform = transforma
 val_set = datasets.ImageFolder("objectsSplitted/val", transform = transformations)
 test_set = datasets.ImageFolder("objectsSplitted/test", transform = transformations)
 # Put into a Dataloader using torch library
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=6, shuffle=True)
-val_loader = torch.utils.data.DataLoader(val_set, batch_size=6, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=6, shuffle=True)
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=16, shuffle=True)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=16, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=16, shuffle=True)
 #dataiter = iter(train_loader)
 #images, labels = dataiter.next()
 
@@ -156,12 +156,13 @@ if os.path.exists(model_path):
     print("Model Loaded")
 
 criterion=nn.CrossEntropyLoss()
-optimizer=optim.SGD(net.parameters(),lr=0.1,momentum=0.9)
+optimizer=optim.SGD(net.parameters(),lr=0.00001,momentum=0.9)
 
-correct = 0
-total = 0
-for epoch in range(30):  # loop over the dataset multiple times
+
+for epoch in range(50):  # loop over the dataset multiple times
     running_loss = 0.0
+    correct = 0
+    total = 0
     for i, data in enumerate(train_loader, 0):
         # get the inputs
         inputs, labels = data
@@ -178,18 +179,17 @@ for epoch in range(30):  # loop over the dataset multiple times
 
         # print statistics
         running_loss += loss.item()
-        if i % 50 == 0:    # print every 2000 mini-batches
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 200))
+        if i % 300 == 0:    # print every 2000 mini-batches
+            print('[%d, %5d] loss: %.8f' %
+                  (epoch + 1, i + 1, running_loss / 300))
             running_loss = 0.0
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
-        if i%1500==0:
-            torch.save(net.state_dict(), model_path)
-            print("Model Saved in",model_path)
-        if i%3000==0:
-            val_accuracy()
+    print('Accuracy of the Training: %d/%d , %.5f %%' % (correct,total,(100 * correct / total)))
+    torch.save(net.state_dict(), model_path)
+    print("Model Saved in",model_path)
+    val_accuracy()
             
 
 print('Finished Training')

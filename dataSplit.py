@@ -9,8 +9,8 @@ Created on Sat Apr 20 17:25:13 2019
 import os, math
 from shutil import copy
 
-parent="/media/hamza/New Volume/datasets/objects"
-parent2="/media/hamza/New Volume/datasets/objectsSplitted"
+parent="objects"
+parent2="objectsSplitted"
 folders=os.listdir(parent)
 #copyfile(src, dst)
 for folder in folders[50:]:
@@ -27,14 +27,20 @@ for folder in folders[50:]:
     if not os.path.exists(os.path.join(parent2,"test",folder)):
         os.makedirs(os.path.join(parent2,"test",folder))
     for file in train:
+        if not os.path.isfile(os.path.join(parent,folder,file)):
+            continue
         sourcePath=os.path.join(parent,folder,file)
         destPath=os.path.join(parent2,"train",folder,file)
         copy(sourcePath,destPath)
     for file in val:
+        if not os.path.isfile(os.path.join(parent,folder,file)):
+            continue
         sourcePath=os.path.join(parent,folder,file)
         destPath=os.path.join(parent2,"val",folder,file)
         copy(sourcePath,destPath)
     for file in test:
+        if not os.path.isfile(os.path.join(parent,folder,file)):
+            continue
         sourcePath=os.path.join(parent,folder,file)
         destPath=os.path.join(parent2,"test",folder,file)
         copy(sourcePath,destPath)
