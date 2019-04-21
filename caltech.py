@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import os
 
-model_path="caltech_model_train"
+model_path="caltech_model_train_Alex"
 
 ##turning on GPU
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -72,8 +72,8 @@ def val_accuracy():
 # Specify transforms using torchvision.transforms as transforms
 # library
 transformations = transforms.Compose([
-    transforms.Resize(255),
-    transforms.CenterCrop(254),
+    transforms.Resize(128),
+    transforms.CenterCrop(127),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
@@ -82,9 +82,9 @@ train_set = datasets.ImageFolder("objectsSplitted/train", transform = transforma
 val_set = datasets.ImageFolder("objectsSplitted/val", transform = transformations)
 test_set = datasets.ImageFolder("objectsSplitted/test", transform = transformations)
 # Put into a Dataloader using torch library
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=4, shuffle=True)
-val_loader = torch.utils.data.DataLoader(val_set, batch_size=4, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=4, shuffle=True)
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=6, shuffle=True)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=6, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=6, shuffle=True)
 #dataiter = iter(train_loader)
 #images, labels = dataiter.next()
 
@@ -95,35 +95,72 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=4, shuffle=True)
 class Net(nn.Module):
     def __init__(self):
         super(Net,self).__init__()
-        self.conv1=nn.Conv2d(3,255,3)
+        self.conv1=nn.Conv2d(3,6,5)
         self.pool=nn.MaxPool2d(2,2)
-        self.conv2=nn.Conv2d(255,64,3)
-        self.fc1 = nn.Linear(64*62*62, 300)
+        self.conv2=nn.Conv2d(6,16,5)
+        self.fc1 = nn.Linear(16*60*60, 300)
         self.fc2 = nn.Linear(300, 257)
         
     def forward(self,x):
         x=self.pool(F.relu(self.conv1(x)))
         x=self.pool(F.relu(self.conv2(x)))
-        x=x.view(-1,64*62*62)
+        x=x.view(-1,16*60*60)
         x=F.relu(self.fc1(x))
         x=self.fc2(x)
         return x
     
-net = Net()
+class AlexNet(nn.Module):
+    def __init__(self, num_classes=257):
+        super(AlexNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(64, 192, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(256 * 8*8, 4096),
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(inplace=True),
+            nn.Linear(4096, num_classes),
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(-1, 256 * 8 * 8)
+        x = self.classifier(x)
+        return x
+    
+
+    
+#net = Net()
+net=AlexNet()
+#sending model to cuda
+net=net.to(device)
+
 if os.path.exists(model_path):
     net.load_state_dict(torch.load(model_path))
     net.eval()
     print("Model Loaded")
 
-#sending model to cuda
-net=net.to(device)
-
 criterion=nn.CrossEntropyLoss()
-optimizer=optim.SGD(net.parameters(),lr=0.01,momentum=0.9)
+optimizer=optim.SGD(net.parameters(),lr=0.1,momentum=0.9)
 
 correct = 0
 total = 0
-for epoch in range(10):  # loop over the dataset multiple times
+for epoch in range(30):  # loop over the dataset multiple times
     running_loss = 0.0
     for i, data in enumerate(train_loader, 0):
         # get the inputs
@@ -148,9 +185,10 @@ for epoch in range(10):  # loop over the dataset multiple times
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
-        if i%1000==0:
+        if i%1500==0:
             torch.save(net.state_dict(), model_path)
             print("Model Saved in",model_path)
+        if i%3000==0:
             val_accuracy()
             
 
