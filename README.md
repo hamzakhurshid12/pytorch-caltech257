@@ -1,3 +1,3 @@
-# Pytorch Caltech257 Object Recognition
+# Pytorch Caltech256 Object Recognition
 
 This repository is under construction!
